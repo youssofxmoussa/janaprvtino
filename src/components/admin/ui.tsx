@@ -44,7 +44,7 @@ export function Sheet({ open, title, onClose, children }: { open: boolean; title
   );
 }
 
-export function Row({ children, onClick, className }: { children: ReactNode; onClick?: () => void; className?: string }) {
+export function Row({ children, onClick, className }: { children: ReactNode; onClick?: (() => void) | undefined; className?: string }) {
   const C = onClick ? "button" : "div";
   return (
     <C onClick={onClick} className={cn("flex w-full items-center gap-3 border-b border-border/50 py-3 text-left last:border-0", onClick && "active:opacity-60", className)}>

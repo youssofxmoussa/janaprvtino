@@ -1,4 +1,4 @@
-export type AuditEntry = { at: string; actor: string; action: string; target?: string };
+export type AuditEntry = { at: string; actor: string; action: string; target?: string | undefined };
 
 /** Records one admin action as its own private file (no overwrite races). */
 export async function logAdminAction(actor: string, action: string, target?: string) {

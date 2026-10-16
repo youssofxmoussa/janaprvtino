@@ -1,6 +1,7 @@
 // Pure access rules, shared by server checks and tests.
 
 export type AccountMeta = {
+  [key: string]: unknown;
   role?: unknown;
   courses?: unknown;
   session_epoch?: unknown;
