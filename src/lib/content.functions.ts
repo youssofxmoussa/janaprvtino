@@ -3,11 +3,15 @@ import { requireAdmin, requireMember } from "./auth.middleware";
 import { canOpenCourse } from "./access";
 import { courses } from "./courses";
 import {
+  allMedia,
   emptyContent,
   isValidCourseId,
   isValidMediaPath,
+  isValidPartId,
+  normalizeStored,
   sanitizeContent,
   type CourseContent,
+  type Lesson,
 } from "./course-content";
 
 // Signed links expire, so a copied link stops working soon after.
@@ -19,7 +23,7 @@ async function readContent(courseId: string): Promise<CourseContent> {
   const { data, error } = await getAdmin().storage.from(DATA_BUCKET).download(`${courseId}.json`);
   if (error || !data) return emptyContent();
   try {
-    return { ...emptyContent(), ...(JSON.parse(await data.text()) as CourseContent) };
+    return normalizeStored(courseId, JSON.parse(await data.text()));
   } catch {
     return emptyContent();
   }
@@ -30,14 +34,14 @@ async function audit(actor: string, action: string, target?: string) {
   await logAdminAction(actor, action, target);
 }
 
-async function signAll(content: CourseContent) {
+async function signLesson(lesson: Lesson) {
   const { getAdmin, MEDIA_BUCKET } = await import("./supabase-admin.server");
   const bucket = getAdmin().storage.from(MEDIA_BUCKET);
   const sign = async (path: string, ttl: number) => (await bucket.createSignedUrl(path, ttl)).data?.signedUrl ?? "";
   const visible = <T extends { hidden?: boolean }>(l: T[]) => l.filter((m) => !m.hidden);
   return {
-    videos: await Promise.all(visible(content.videos).map(async (v) => ({ id: v.id, title: v.title, url: await sign(v.path, VIDEO_TTL) }))),
-    pdfs: await Promise.all(visible(content.pdfs).map(async (p) => ({ id: p.id, title: p.title, url: await sign(p.path, PDF_TTL) }))),
+    videos: await Promise.all(visible(lesson.videos).map(async (v) => ({ id: v.id, title: v.title, url: await sign(v.path, VIDEO_TTL) }))),
+    pdfs: await Promise.all(visible(lesson.pdfs).map(async (p) => ({ id: p.id, title: p.title, url: await sign(p.path, PDF_TTL) }))),
   };
 }
 
@@ -46,22 +50,47 @@ const courseInput = (input: { courseId: string }) => {
   return { courseId: input.courseId };
 };
 
-/** Student view: no storage paths, only short-lived links + viewer email for the watermark. */
-export const getCourseContent = createServerFn({ method: "POST" })
+function assertOpen(meta: Parameters<typeof canOpenCourse>[0], courseId: string) {
+  if (!canOpenCourse(meta, courseId)) throw new Error("This course isn't open on your account.");
+}
+
+/** Student view of a subject: sections and their visible lessons (no files). */
+export const getCourseOutline = createServerFn({ method: "POST" })
   .middleware([requireMember])
   .inputValidator(courseInput)
   .handler(async ({ data, context }) => {
-    if (!canOpenCourse(context.meta, data.courseId)) {
-      throw new Error("This course isn't open on your account.");
-    }
+    assertOpen(context.meta, data.courseId);
     const content = await readContent(data.courseId);
-    const signed = await signAll(content);
-    return {
-      description: content.description,
-      questions: content.questions,
-      ...signed,
-      viewer: context.email,
-    };
+    const parts: Record<string, { id: string; title: string; videos: number; pdfs: number; questions: number }[]> = {};
+    for (const [partId, lessons] of Object.entries(content.parts)) {
+      parts[partId] = lessons.filter((l) => !l.hidden).map((l) => ({
+        id: l.id,
+        title: l.title,
+        videos: l.videos.filter((m) => !m.hidden).length,
+        pdfs: l.pdfs.filter((m) => !m.hidden).length,
+        questions: l.questions.length,
+      }));
+    }
+    return { description: content.description, parts };
+  });
+
+/** Student view of one lesson: no storage paths, only short-lived links + viewer email for the watermark. */
+export const getLessonContent = createServerFn({ method: "POST" })
+  .middleware([requireMember])
+  .inputValidator((input: { courseId: string; partId: string; lessonId: string }) => {
+    const { courseId } = courseInput(input);
+    if (!isValidPartId(courseId, input.partId)) throw new Error("Unknown section");
+    const lessonId = String(input.lessonId ?? "");
+    if (!/^[A-Za-z0-9-]{1,64}$/.test(lessonId)) throw new Error("Unknown lesson");
+    return { courseId, partId: input.partId, lessonId };
+  })
+  .handler(async ({ data, context }) => {
+    assertOpen(context.meta, data.courseId);
+    const content = await readContent(data.courseId);
+    const lesson = content.parts[data.partId]?.find((l) => l.id === data.lessonId && !l.hidden);
+    if (!lesson) throw new Error("This lesson isn't available.");
+    const signed = await signLesson(lesson);
+    return { title: lesson.title, questions: lesson.questions, ...signed, viewer: context.email };
   });
 
 export const getCourseContentAdmin = createServerFn({ method: "POST" })
@@ -87,8 +116,8 @@ export const saveCourseContent = createServerFn({ method: "POST" })
       });
     if (error) throw new Error("Couldn't save. Try again.");
     // Remove files that are no longer used by this course.
-    const keep = new Set([...data.content.videos, ...data.content.pdfs].map((m) => m.path));
-    const removed = [...before.videos, ...before.pdfs].map((m) => m.path).filter((p) => !keep.has(p));
+    const keep = new Set(allMedia(data.content).map((m) => m.path));
+    const removed = allMedia(before).map((m) => m.path).filter((p) => !keep.has(p));
     if (removed.length) await admin.storage.from(MEDIA_BUCKET).remove(removed);
     await audit(context.email, "Saved course content", data.courseId);
     return { ok: true };
@@ -157,9 +186,10 @@ export const getDashboardStats = createServerFn({ method: "POST" })
       students,
       paused,
       activeWeek,
-      videos: all.reduce((n, c) => n + c.videos.length, 0),
-      pdfs: all.reduce((n, c) => n + c.pdfs.length, 0),
-      questions: all.reduce((n, c) => n + c.questions.length, 0),
+      lessons: all.reduce((n, c) => n + Object.values(c.parts).flat().length, 0),
+      videos: all.reduce((n, c) => n + Object.values(c.parts).flat().reduce((m, l) => m + l.videos.length, 0), 0),
+      pdfs: all.reduce((n, c) => n + Object.values(c.parts).flat().reduce((m, l) => m + l.pdfs.length, 0), 0),
+      questions: all.reduce((n, c) => n + Object.values(c.parts).flat().reduce((m, l) => m + l.questions.length, 0), 0),
     };
   });
 
