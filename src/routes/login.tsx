@@ -6,6 +6,8 @@ import { Field } from "@/components/ios/Field";
 import { Pressable, spring } from "@/components/ios/press";
 import { appHead } from "@/lib/seo";
 import { getSessionUser, isAdmin, supabase } from "@/lib/supabase";
+import { useServerFn } from "@tanstack/react-start";
+import { signInWithLimit } from "@/lib/login.functions";
 
 export const Route = createFileRoute("/login")({
   ssr: false,
@@ -21,6 +23,7 @@ export const Route = createFileRoute("/login")({
 
 function SignIn() {
   const navigate = useNavigate();
+  const signIn = useServerFn(signInWithLimit);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,32 +42,21 @@ function SignIn() {
     if (status !== "idle") return;
     setError(null);
 
-    // Slow down repeated guessing on this device (the sign-in service also limits attempts).
-    const lock = JSON.parse(localStorage.getItem("jp_login_lock") || '{"n":0,"until":0}') as { n: number; until: number };
-    if (lock.until > Date.now()) {
-      setError(`Too many attempts. Try again in ${Math.ceil((lock.until - Date.now()) / 1000)}s.`);
-      return;
-    }
     setStatus("loading");
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase().slice(0, 254),
-      password: password.slice(0, 72),
-    });
-    if (signInError || !data.user) {
-      const msg = signInError?.message ?? "";
-      const n = lock.n + 1;
-      localStorage.setItem("jp_login_lock", JSON.stringify({ n: n >= 5 ? 0 : n, until: n >= 5 ? Date.now() + 60_000 : 0 }));
-      setError(/banned/i.test(msg) ? "Your account is paused. Contact your teacher." : "Incorrect email or password.");
+    // The server counts attempts per account and per network, shared by every device.
+    const res = await signIn({ data: { email, password } }).catch(() => ({ ok: false as const, error: "Couldn't sign in. Check your connection." }));
+    if (!res.ok) {
+      setError(res.error);
       setStatus("idle");
       return;
     }
-    localStorage.removeItem("jp_login_lock");
-
-    const role = data.user.app_metadata?.["role"];
-    if (role !== "admin" && role !== "student") {
-      await supabase.auth.signOut();
-      setError("This account has no access. Contact your teacher.");
+    const { data, error: sessionError } = await supabase.auth.setSession({
+      access_token: res.access_token,
+      refresh_token: res.refresh_token,
+    });
+    if (sessionError || !data.user) {
+      setError("Couldn't sign in. Try again.");
       setStatus("idle");
       return;
     }

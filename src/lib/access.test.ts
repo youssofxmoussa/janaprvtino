@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canManageAccount, canOpenCourse, hitLimit, tokenStillValid } from "./access";
+import { addFailure, limitStatus, LOGIN_LIMITS, canManageAccount, canOpenCourse, hitLimit, tokenStillValid } from "./access";
 
 describe("access rules", () => {
   it("admin accounts cannot be paused, edited or deleted from the list", () => {
@@ -28,7 +28,6 @@ describe("access rules", () => {
   });
 });
 
-import { addFailure, limitStatus, LOGIN_LIMITS } from "./access";
 describe("shared sign-in limit", () => {
   const now = 1_000_000;
   it("locks an account after 5 failed attempts within 15 minutes", () => {
