@@ -1,0 +1,255 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Apple-inspired design system.
+ * Tokens only — never hardcode colors in components.
+ */
+
+@theme inline {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --radius-sm: var(--radius-1);
+  --radius-md: var(--radius-2);
+  --radius-lg: var(--radius-3);
+  --radius-xl: var(--radius-4);
+  --radius-2xl: var(--radius-5);
+  --radius-3xl: calc(var(--radius-5) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-solid: var(--surface-solid);
+  --color-card: var(--surface-solid);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--surface-solid);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-secondary: var(--fill);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--fill);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--fill);
+  --color-ring: var(--accent);
+  --color-mint: var(--mint);
+  --color-peach: var(--peach);
+  --color-lilac: var(--lilac);
+
+  --shadow-clay: var(--clay);
+  --shadow-soft: var(--soft);
+  --shadow-lift: var(--lift);
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root {
+  --background: oklch(0.968 0.002 260);
+  --foreground: oklch(0.19 0.006 285);
+  --text-secondary: oklch(0.58 0.008 285);
+  --surface: oklch(1 0 0 / 0.72);
+  --surface-solid: oklch(1 0 0);
+  --fill: oklch(0.93 0.004 265);
+  --border: oklch(0.89 0.004 265);
+
+  --accent: oklch(0.62 0.2 258);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.62 0.21 25);
+
+  --mint: oklch(0.86 0.09 172);
+  --peach: oklch(0.87 0.08 55);
+  --lilac: oklch(0.85 0.08 300);
+
+  --radius-1: 12px;
+  --radius-2: 18px;
+  --radius-3: 26px;
+  --radius-4: 32px;
+  --radius-5: 40px;
+
+  --soft: 0 12px 40px oklch(0 0 0 / 0.06);
+  --lift: 0 20px 50px oklch(0 0 0 / 0.1);
+  --clay:
+    0 18px 40px oklch(0.19 0.006 285 / 0.1),
+    inset 0 2px 2px oklch(1 0 0 / 0.75),
+    inset 0 -6px 14px oklch(0.19 0.006 285 / 0.06);
+  --blur: 24px;
+}
+
+.dark {
+  --background: oklch(0.16 0.005 285);
+  --foreground: oklch(0.97 0 0);
+  --text-secondary: oklch(0.68 0.008 285);
+  --surface: oklch(0.28 0.006 285 / 0.6);
+  --surface-solid: oklch(0.22 0.006 285);
+  --fill: oklch(0.28 0.006 285);
+  --border: oklch(1 0 0 / 0.1);
+  --accent: oklch(0.68 0.18 255);
+  --soft: 0 12px 40px oklch(0 0 0 / 0.4);
+  --lift: 0 20px 50px oklch(0 0 0 / 0.55);
+  --clay:
+    0 18px 40px oklch(0 0 0 / 0.45),
+    inset 0 1px 1px oklch(1 0 0 / 0.08),
+    inset 0 -6px 14px oklch(0 0 0 / 0.25);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    transition: font-size 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .reduce-motion html,
+  html.reduce-motion {
+    transition: none;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.011em;
+  }
+}
+
+/* Translucent iOS material */
+@utility material {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur)) saturate(180%);
+  border: 1px solid oklch(1 0 0 / 0.5);
+}
+
+@utility material-dim {
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  backdrop-filter: blur(var(--blur)) saturate(180%);
+}
+
+/* Soft 3D clay surface */
+@utility clay {
+  background: var(--surface-solid);
+  box-shadow: var(--clay);
+}
+
+/* Glass + clay hybrid: translucent blur with soft 3D depth */
+@utility glass-clay {
+  background: color-mix(in oklab, var(--surface-solid) 92%, transparent);
+  backdrop-filter: blur(32px) saturate(190%);
+  border: 1px solid oklch(1 0 0 / 0.12);
+  box-shadow: var(--clay);
+}
+
+/* Same frosted surface, no heavy drop shadow (bars over content) */
+@utility glass-flat {
+  background: color-mix(in oklab, var(--surface-solid) 94%, transparent);
+  backdrop-filter: blur(32px) saturate(190%);
+  border: 1px solid oklch(1 0 0 / 0.12);
+  box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.14);
+}
+
+
+/* Same hybrid, forced near-black surface (top bars) */
+@utility glass-clay-black {
+  background: oklch(0.14 0.004 285 / 0.82);
+  backdrop-filter: blur(var(--blur)) saturate(180%);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  box-shadow:
+    0 18px 40px oklch(0 0 0 / 0.45),
+    inset 0 1px 1px oklch(1 0 0 / 0.1),
+    inset 0 -6px 14px oklch(0 0 0 / 0.35);
+  color: oklch(0.97 0 0);
+}
+
+
+@utility safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+@utility safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility text-large-title {
+  font-size: 2.125rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Video.js preset-react overrides */
+.subject-video-player {
+  width: 100%;
+  height: 100%;
+}
+
+.subject-video-player video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 
+ * Ensuring menus/popovers appear above the control bar for mobile.
+ * In @videojs/react v10 (Web Components), we target media-popover 
+ * or the built-in popover shadow DOM if needed, but usually a 
+ * bottom-offset on the container works.
+ */
+media-popover {
+  bottom: 100% !important;
+  margin-bottom: 8px !important;
+}
+
+/* Accessibility preferences (Appearance settings) */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+.bold-text body {
+  font-weight: 600;
+}
+
+.video-js .vjs-control,
+.video-js button {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.video-js .vjs-control:hover,
+.video-js .vjs-control:focus {
+  background: transparent !important;
+}
+
+/* Smooth page transitions (View Transitions API) */
+::view-transition-old(root) {
+  animation: vt-out 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-in 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes vt-out {
+  to { opacity: 0; transform: scale(0.985); }
+}
+@keyframes vt-in {
+  from { opacity: 0; transform: translateY(10px) scale(1.01); }
+}
+nav.fixed { view-transition-name: tabbar; }
+::view-transition-group(tabbar) { animation: none; }
+.reduce-motion::view-transition-old(root),
+.reduce-motion::view-transition-new(root) { animation: none; }
