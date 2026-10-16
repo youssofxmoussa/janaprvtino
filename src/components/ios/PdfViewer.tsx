@@ -198,10 +198,10 @@ export function PdfViewer({ src, className, onProgress, viewer = "" }: PdfViewer
         <>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-10 bg-[url('/brand/jana-logo.png')] bg-[length:55%_auto] bg-[position:center_20vh] bg-repeat-y opacity-[0.07]"
-            style={{ backgroundSize: "55% auto", backgroundRepeat: "repeat-y", backgroundPosition: "center 15vh" }}
+            className="pointer-events-none absolute inset-0 z-10 opacity-[0.07]"
+            style={{ backgroundImage: "url('/brand/jana-logo.png')", backgroundSize: "55% auto", backgroundRepeat: "repeat-y", backgroundPosition: "center 15vh" }}
           />
-          <Watermark text={viewer} tiled />
+          <Watermark text={viewer} tiled count={Math.min(40 * pageCount, 800)} />
         </>
       )}
       {!error && pageCount === 0 && (
