@@ -22,6 +22,8 @@ import { Route as TabsMeRouteImport } from './routes/_tabs/me'
 import { Route as TabsNotificationsRouteImport } from './routes/_tabs/notifications'
 import { Route as TabsPrivacyRouteImport } from './routes/_tabs/privacy'
 import { Route as TabsStreakRouteImport } from './routes/_tabs/streak'
+import { Route as TabsSubjectCourseIdIndexRouteImport } from './routes/_tabs/subject.$courseId.index'
+import { Route as TabsSubjectCourseIdPartIdIndexRouteImport } from './routes/_tabs/subject.$courseId.$partId.index'
 import { Route as TabsSubjectCourseIdPartIdLessonIdRouteImport } from './routes/_tabs/subject.$courseId.$partId.$lessonId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -88,6 +90,18 @@ const TabsStreakRoute = TabsStreakRouteImport.update({
   path: '/streak',
   getParentRoute: () => TabsRoute,
 } as any)
+const TabsSubjectCourseIdIndexRoute =
+  TabsSubjectCourseIdIndexRouteImport.update({
+    id: '/subject/$courseId/',
+    path: '/subject/$courseId/',
+    getParentRoute: () => TabsRoute,
+  } as any)
+const TabsSubjectCourseIdPartIdIndexRoute =
+  TabsSubjectCourseIdPartIdIndexRouteImport.update({
+    id: '/subject/$courseId/$partId/',
+    path: '/subject/$courseId/$partId/',
+    getParentRoute: () => TabsRoute,
+  } as any)
 const TabsSubjectCourseIdPartIdLessonIdRoute =
   TabsSubjectCourseIdPartIdLessonIdRouteImport.update({
     id: '/subject/$courseId/$partId/$lessonId',
@@ -108,7 +122,9 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof TabsNotificationsRoute
   '/privacy': typeof TabsPrivacyRoute
   '/streak': typeof TabsStreakRoute
+  '/subject/$courseId/': typeof TabsSubjectCourseIdIndexRoute
   '/subject/$courseId/$partId/$lessonId': typeof TabsSubjectCourseIdPartIdLessonIdRoute
+  '/subject/$courseId/$partId/': typeof TabsSubjectCourseIdPartIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,7 +139,9 @@ export interface FileRoutesByTo {
   '/notifications': typeof TabsNotificationsRoute
   '/privacy': typeof TabsPrivacyRoute
   '/streak': typeof TabsStreakRoute
+  '/subject/$courseId': typeof TabsSubjectCourseIdIndexRoute
   '/subject/$courseId/$partId/$lessonId': typeof TabsSubjectCourseIdPartIdLessonIdRoute
+  '/subject/$courseId/$partId': typeof TabsSubjectCourseIdPartIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,7 +158,9 @@ export interface FileRoutesById {
   '/_tabs/notifications': typeof TabsNotificationsRoute
   '/_tabs/privacy': typeof TabsPrivacyRoute
   '/_tabs/streak': typeof TabsStreakRoute
+  '/_tabs/subject/$courseId/': typeof TabsSubjectCourseIdIndexRoute
   '/_tabs/subject/$courseId/$partId/$lessonId': typeof TabsSubjectCourseIdPartIdLessonIdRoute
+  '/_tabs/subject/$courseId/$partId/': typeof TabsSubjectCourseIdPartIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,7 +177,9 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/privacy'
     | '/streak'
+    | '/subject/$courseId/'
     | '/subject/$courseId/$partId/$lessonId'
+    | '/subject/$courseId/$partId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,7 +194,9 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/privacy'
     | '/streak'
+    | '/subject/$courseId'
     | '/subject/$courseId/$partId/$lessonId'
+    | '/subject/$courseId/$partId'
   id:
     | '__root__'
     | '/'
@@ -188,7 +212,9 @@ export interface FileRouteTypes {
     | '/_tabs/notifications'
     | '/_tabs/privacy'
     | '/_tabs/streak'
+    | '/_tabs/subject/$courseId/'
     | '/_tabs/subject/$courseId/$partId/$lessonId'
+    | '/_tabs/subject/$courseId/$partId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -293,6 +319,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TabsStreakRouteImport
       parentRoute: typeof TabsRoute
     }
+    '/_tabs/subject/$courseId/': {
+      id: '/_tabs/subject/$courseId/'
+      path: '/subject/$courseId'
+      fullPath: '/subject/$courseId/'
+      preLoaderRoute: typeof TabsSubjectCourseIdIndexRouteImport
+      parentRoute: typeof TabsRoute
+    }
+    '/_tabs/subject/$courseId/$partId/': {
+      id: '/_tabs/subject/$courseId/$partId/'
+      path: '/subject/$courseId/$partId'
+      fullPath: '/subject/$courseId/$partId/'
+      preLoaderRoute: typeof TabsSubjectCourseIdPartIdIndexRouteImport
+      parentRoute: typeof TabsRoute
+    }
     '/_tabs/subject/$courseId/$partId/$lessonId': {
       id: '/_tabs/subject/$courseId/$partId/$lessonId'
       path: '/subject/$courseId/$partId/$lessonId'
@@ -311,7 +351,9 @@ interface TabsRouteChildren {
   TabsNotificationsRoute: typeof TabsNotificationsRoute
   TabsPrivacyRoute: typeof TabsPrivacyRoute
   TabsStreakRoute: typeof TabsStreakRoute
+  TabsSubjectCourseIdIndexRoute: typeof TabsSubjectCourseIdIndexRoute
   TabsSubjectCourseIdPartIdLessonIdRoute: typeof TabsSubjectCourseIdPartIdLessonIdRoute
+  TabsSubjectCourseIdPartIdIndexRoute: typeof TabsSubjectCourseIdPartIdIndexRoute
 }
 
 const TabsRouteChildren: TabsRouteChildren = {
@@ -322,8 +364,10 @@ const TabsRouteChildren: TabsRouteChildren = {
   TabsNotificationsRoute: TabsNotificationsRoute,
   TabsPrivacyRoute: TabsPrivacyRoute,
   TabsStreakRoute: TabsStreakRoute,
+  TabsSubjectCourseIdIndexRoute: TabsSubjectCourseIdIndexRoute,
   TabsSubjectCourseIdPartIdLessonIdRoute:
     TabsSubjectCourseIdPartIdLessonIdRoute,
+  TabsSubjectCourseIdPartIdIndexRoute: TabsSubjectCourseIdPartIdIndexRoute,
 }
 
 const TabsRouteWithChildren = TabsRoute._addFileChildren(TabsRouteChildren)
