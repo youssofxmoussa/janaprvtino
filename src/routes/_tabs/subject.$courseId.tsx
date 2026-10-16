@@ -240,7 +240,7 @@ function SubjectContent() {
         });
       }
     };
-  }, [activeTab, courseId, videoAttempt]);
+  }, [activeTab, courseId, videoAttempt, currentVideo?.id]);
 
   /* =========================================================
      PDF PROGRESS
