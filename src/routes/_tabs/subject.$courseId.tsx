@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import { courses } from "@/lib/courses";
 import { PdfViewer } from "@/components/ios/PdfViewer";
+import { Watermark } from "@/components/ios/Watermark";
+import { useServerFn } from "@tanstack/react-start";
+import { getCourseContent } from "@/lib/content.functions";
 import { Button } from "@/components/ui/button";
 import { spring } from "@/components/ios/press";
 import { recordMinutes, recordSubject, useFocusTimer } from "@/lib/activity";
@@ -53,8 +56,6 @@ export const Route = createFileRoute("/_tabs/subject/$courseId")({
    REAL VIDEO + PDF SOURCES
    ========================================================= */
 
-const COURSE_VIDEO_URL = "https://files.catbox.moe/t9x4l2.mp4";
-const COURSE_PDF_URL = "https://files.catbox.moe/ht0aj9.pdf";
 /* =========================================================
    TYPES
    ========================================================= */
@@ -73,64 +74,6 @@ interface Question {
    QUESTIONS
    ========================================================= */
 
-const QUESTIONS: Question[] = [
-  {
-    id: 1,
-    question:
-      "Which of the following best describes the core methodology discussed in Chapter 1?",
-    options: [
-      "Qualitative Analysis",
-      "Quantitative Research",
-      "Mixed Methods",
-      "Heuristic Evaluation",
-    ],
-    correctAnswer: 2,
-    explanation:
-      "Chapter 1 emphasizes the integration of both qualitative and quantitative data to provide a comprehensive view.",
-  },
-  {
-    id: 2,
-    question:
-      "What is the primary objective of the experimental design presented in this module?",
-    options: [
-      "To minimize variables",
-      "To maximize throughput",
-      "To validate historical data",
-      "To isolate the dependent factor",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "Control groups are used specifically to minimize confounding variables.",
-  },
-  {
-    id: 3,
-    question:
-      "Which term refers to the process of data normalization used in the introduction?",
-    options: [
-      "Standardization",
-      "Extrapolation",
-      "Interpolation",
-      "Aggregation",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "Standardization is the process of putting different variables on the same scale.",
-  },
-  {
-    id: 4,
-    question:
-      "According to the lecturer, what is the 'Golden Rule' of scientific inquiry?",
-    options: [
-      "Never repeat a failed test",
-      "Reproducibility is key",
-      "Speed over accuracy",
-      "Data over intuition",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "The lecturer stresses that a result must be reproducible by others to be considered valid.",
-  },
-];
 
 /* =========================================================
    PAGE
@@ -151,6 +94,24 @@ function SubjectContent() {
       ),
     [courseId],
   );
+
+  const fetchContent = useServerFn(getCourseContent);
+  type Content = Awaited<ReturnType<typeof getCourseContent>>;
+  const [content, setContent] = useState<Content | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [videoIdx, setVideoIdx] = useState(0);
+  const [pdfIdx, setPdfIdx] = useState(0);
+  useEffect(() => {
+    let live = true;
+    fetchContent({ data: { courseId: courseId.toLowerCase() } })
+      .then((c) => live && setContent(c))
+      .catch((e: Error) => live && setLoadError(e.message));
+    return () => { live = false; };
+  }, [courseId, fetchContent]);
+  const QUESTIONS: Question[] = content?.questions ?? [];
+  const currentVideo = content?.videos[videoIdx];
+  const currentPdf = content?.pdfs[pdfIdx];
+  const blockSave = (e: React.SyntheticEvent) => e.preventDefault();
 
   const [activeTab, setActiveTab] = useState<Tab>("Videos");
   const [isSaved, setIsSaved] = useState(false);
@@ -195,7 +156,7 @@ function SubjectContent() {
     recordSubject(courseId, {
       quizTotal: QUESTIONS.length,
     });
-  }, [courseId]);
+  }, [courseId, QUESTIONS.length]);
 
   /* =========================================================
      VIDEO WATCH TRACKING
@@ -279,7 +240,7 @@ function SubjectContent() {
         });
       }
     };
-  }, [activeTab, courseId, videoAttempt]);
+  }, [activeTab, courseId, videoAttempt, currentVideo?.id]);
 
   /* =========================================================
      PDF PROGRESS
@@ -369,7 +330,7 @@ function SubjectContent() {
 
   const currentQuestion = QUESTIONS[currentQuestionIdx];
 
-  if (!course || !currentQuestion) {
+  if (!course) {
     return (
       <div className="p-12 text-center">
         Subject not found
@@ -451,21 +412,34 @@ function SubjectContent() {
               }}
               className="flex flex-col gap-6"
             >
+              {loadError && (
+                <p role="alert" className="rounded-2xl bg-destructive/10 px-4 py-3 text-[0.875rem] font-medium text-destructive">{loadError}</p>
+              )}
               <div
                 ref={videoWrapRef}
-                className="relative aspect-video w-full overflow-hidden rounded-[20px] bg-secondary"
+                onContextMenu={blockSave}
+                onDragStart={blockSave}
+                className="relative aspect-video w-full select-none overflow-hidden rounded-[20px] bg-secondary"
               >
-                <VideoPlayer
-  key={videoAttempt}
->
-  <VideoSkin>
-    <Video
-      src={COURSE_VIDEO_URL}
-      playsInline
-      preload="metadata"
-    />
-  </VideoSkin>
-</VideoPlayer>
+                {currentVideo ? (
+                  <VideoPlayer key={`${currentVideo.id}-${videoAttempt}`}>
+                    <VideoSkin>
+                      <Video
+                        src={currentVideo.url}
+                        playsInline
+                        preload="metadata"
+                        controlsList="nodownload noremoteplayback"
+                        disablePictureInPicture
+                        disableRemotePlayback
+                      />
+                    </VideoSkin>
+                  </VideoPlayer>
+                ) : (
+                  <div className="grid h-full place-items-center px-6 text-center text-[0.875rem] font-medium text-muted-foreground">
+                    {content ? "No lectures yet." : loadError ? "Unavailable" : "Loading…"}
+                  </div>
+                )}
+                <Watermark text={content?.viewer ?? ""} />
 
                 {videoError && (
                   <div
@@ -535,12 +509,22 @@ function SubjectContent() {
                   </button>
                 </div>
 
-                <p className="text-[0.875rem] text-muted-foreground/90 leading-relaxed font-medium w-full">
-                  Master the foundations of {course.title} with
-                  this comprehensive deep-dive. This session
-                  covers fundamental principles, modern
-                  applications, and core theoretical frameworks.
+                <p className="text-[0.875rem] text-muted-foreground/90 leading-relaxed font-medium w-full whitespace-pre-line">
+                  {content?.description || `Lectures for ${course.title}.`}
                 </p>
+                {content && content.videos.length > 1 && (
+                  <div className="flex flex-col gap-2">
+                    {content.videos.map((v, i) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setVideoIdx(i)}
+                        className={cn("clay rounded-2xl px-4 py-3 text-left text-[0.875rem] font-semibold", i === videoIdx ? "text-primary" : "text-foreground")}
+                      >
+                        {i + 1}. {v.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -574,11 +558,28 @@ function SubjectContent() {
               className="flex flex-col gap-4 flex-1"
             >
               <div className="flex w-full flex-1 flex-col min-h-[60vh]">
-                <PdfViewer
-                  src={COURSE_PDF_URL}
-                  className="w-full flex-1"
-                  onProgress={handlePdfProgress}
-                />
+                {content && content.pdfs.length > 1 && (
+                  <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                    {content.pdfs.map((p, i) => (
+                      <button key={p.id} onClick={() => setPdfIdx(i)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold", i === pdfIdx ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>
+                        {p.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {currentPdf ? (
+                  <PdfViewer
+                    key={currentPdf.id}
+                    src={currentPdf.url}
+                    viewer={content?.viewer}
+                    className="w-full flex-1"
+                    onProgress={handlePdfProgress}
+                  />
+                ) : (
+                  <p className="py-10 text-center text-[0.875rem] font-medium text-muted-foreground">
+                    {loadError ?? (content ? "No PDFs yet." : "Loading…")}
+                  </p>
+                )}
               </div>
             </motion.div>
           )}
@@ -587,7 +588,12 @@ function SubjectContent() {
               Q&A TAB
              ================================================= */}
 
-          {activeTab === "Q&A" && (
+          {activeTab === "Q&A" && !currentQuestion && (
+            <motion.p key="qa-empty" className="py-10 text-center text-[0.875rem] font-medium text-muted-foreground">
+              {loadError ?? (content ? "No questions yet." : "Loading…")}
+            </motion.p>
+          )}
+          {activeTab === "Q&A" && currentQuestion && (
             <motion.div
               key="qa"
               initial={{

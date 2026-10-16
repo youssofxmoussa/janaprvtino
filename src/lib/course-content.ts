@@ -1,6 +1,6 @@
 import { courses } from "./courses";
 
-export type MediaItem = { id: string; title: string; path: string };
+export type MediaItem = { id: string; title: string; path: string; hidden?: boolean };
 export type Question = {
   id: number;
   question: string;
@@ -45,6 +45,7 @@ function sanitizeMedia(courseId: string, list: unknown): MediaItem[] {
       id: str(m["id"], 64) || crypto.randomUUID(),
       title: str(m["title"], 160) || "Untitled",
       path: m["path"] as string,
+      hidden: m["hidden"] === true,
     };
   });
 }
