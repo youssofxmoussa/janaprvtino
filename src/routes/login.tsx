@@ -38,15 +38,33 @@ function SignIn() {
     event.preventDefault();
     if (status !== "idle") return;
     setError(null);
+
+    // Slow down repeated guessing on this device (the sign-in service also limits attempts).
+    const lock = JSON.parse(localStorage.getItem("jp_login_lock") || '{"n":0,"until":0}') as { n: number; until: number };
+    if (lock.until > Date.now()) {
+      setError(`Too many attempts. Try again in ${Math.ceil((lock.until - Date.now()) / 1000)}s.`);
+      return;
+    }
     setStatus("loading");
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
+      email: email.trim().toLowerCase().slice(0, 254),
+      password: password.slice(0, 72),
     });
     if (signInError || !data.user) {
       const msg = signInError?.message ?? "";
+      const n = lock.n + 1;
+      localStorage.setItem("jp_login_lock", JSON.stringify({ n: n >= 5 ? 0 : n, until: n >= 5 ? Date.now() + 60_000 : 0 }));
       setError(/banned/i.test(msg) ? "Your account is paused. Contact your teacher." : "Incorrect email or password.");
+      setStatus("idle");
+      return;
+    }
+    localStorage.removeItem("jp_login_lock");
+
+    const role = data.user.app_metadata?.["role"];
+    if (role !== "admin" && role !== "student") {
+      await supabase.auth.signOut();
+      setError("This account has no access. Contact your teacher.");
       setStatus("idle");
       return;
     }
