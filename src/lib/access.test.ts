@@ -27,3 +27,20 @@ describe("access rules", () => {
     expect(hitLimit("t", 3, 1000, 0)).toBe(true);
   });
 });
+
+import { addFailure, limitStatus, LOGIN_LIMITS } from "./access";
+describe("shared sign-in limit", () => {
+  const now = 1_000_000;
+  it("locks an account after 5 failed attempts within 15 minutes", () => {
+    let s = null as ReturnType<typeof addFailure> | null;
+    for (let i = 0; i < 4; i++) s = addFailure(s, LOGIN_LIMITS.email.windowMs, now);
+    expect(limitStatus(s, LOGIN_LIMITS.email.max, now).blocked).toBe(false);
+    s = addFailure(s, LOGIN_LIMITS.email.windowMs, now);
+    expect(limitStatus(s, LOGIN_LIMITS.email.max, now).blocked).toBe(true);
+  });
+  it("unlocks once the 15 minute window passes", () => {
+    let s = null as ReturnType<typeof addFailure> | null;
+    for (let i = 0; i < 5; i++) s = addFailure(s, LOGIN_LIMITS.email.windowMs, now);
+    expect(limitStatus(s, 5, now + 15 * 60_000).blocked).toBe(false);
+  });
+});
