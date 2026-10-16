@@ -13,7 +13,7 @@ import { courses } from "@/lib/courses";
 import { PdfViewer } from "@/components/ios/PdfViewer";
 import { Watermark } from "@/components/ios/Watermark";
 import { useServerFn } from "@tanstack/react-start";
-import { getCourseContent } from "@/lib/content.functions";
+import { getLessonContent } from "@/lib/content.functions";
 import { Button } from "@/components/ui/button";
 import { spring } from "@/components/ios/press";
 import { recordMinutes, recordSubject, useFocusTimer } from "@/lib/activity";
@@ -26,7 +26,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const Route = createFileRoute("/_tabs/subject/$courseId")({
+export const Route = createFileRoute("/_tabs/subject/$courseId/$partId/$lessonId")({
   head: ({ params }) => {
     const course = courses.find(
       (c) => c.id.toLowerCase() === params.courseId.toLowerCase(),
@@ -80,12 +80,12 @@ interface Question {
    ========================================================= */
 
 function SubjectPage() {
-  const { courseId } = Route.useParams();
-  return <SubjectContent key={courseId} />;
+  const { courseId, partId, lessonId } = Route.useParams();
+  return <SubjectContent key={`${courseId}/${partId}/${lessonId}`} />;
 }
 
 function SubjectContent() {
-  const { courseId } = Route.useParams();
+  const { courseId, partId, lessonId } = Route.useParams();
 
   const course = useMemo(
     () =>
@@ -95,19 +95,19 @@ function SubjectContent() {
     [courseId],
   );
 
-  const fetchContent = useServerFn(getCourseContent);
-  type Content = Awaited<ReturnType<typeof getCourseContent>>;
+  const fetchContent = useServerFn(getLessonContent);
+  type Content = Awaited<ReturnType<typeof getLessonContent>>;
   const [content, setContent] = useState<Content | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [videoIdx, setVideoIdx] = useState(0);
   const [pdfIdx, setPdfIdx] = useState(0);
   useEffect(() => {
     let live = true;
-    fetchContent({ data: { courseId: courseId.toLowerCase() } })
+    fetchContent({ data: { courseId: courseId.toLowerCase(), partId, lessonId } })
       .then((c) => live && setContent(c))
       .catch((e: Error) => live && setLoadError(e.message));
     return () => { live = false; };
-  }, [courseId, fetchContent]);
+  }, [courseId, partId, lessonId, fetchContent]);
   const QUESTIONS: Question[] = content?.questions ?? [];
   const currentVideo = content?.videos[videoIdx];
   const currentPdf = content?.pdfs[pdfIdx];
@@ -346,8 +346,9 @@ function SubjectContent() {
 
       <nav className="sticky top-2 z-30 flex h-11 w-full shrink-0 items-center gap-1 rounded-2xl px-1 glass-flat">
         <Link
-          to="/courses"
-          aria-label="Back to courses"
+          to="/subject/$courseId/$partId"
+          params={{ courseId, partId }}
+          aria-label="Back to lessons"
           className="flex size-8 shrink-0 items-center justify-center rounded-xl text-primary transition-transform active:scale-90"
         >
           <ChevronLeft
@@ -483,7 +484,7 @@ function SubjectContent() {
               <div className="flex flex-col gap-3 px-1">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-xl font-bold tracking-tight break-words flex-1">
-                    {course.title}
+                    {content?.title ?? course.title}
                   </h2>
 
                   <button
@@ -510,7 +511,7 @@ function SubjectContent() {
                 </div>
 
                 <p className="text-[0.875rem] text-muted-foreground/90 leading-relaxed font-medium w-full whitespace-pre-line">
-                  {content?.description || `Lectures for ${course.title}.`}
+                  {course.title}
                 </p>
                 {content && content.videos.length > 1 && (
                   <div className="flex flex-col gap-2">

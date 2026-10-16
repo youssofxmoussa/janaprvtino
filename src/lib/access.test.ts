@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canManageAccount, canOpenCourse, hitLimit, tokenStillValid } from "./access";
+import { addFailure, limitStatus, LOGIN_LIMITS, canManageAccount, canOpenCourse, hitLimit, tokenStillValid } from "./access";
 
 describe("access rules", () => {
   it("admin accounts cannot be paused, edited or deleted from the list", () => {
@@ -25,5 +25,21 @@ describe("access rules", () => {
   it("rate limit trips after the max", () => {
     for (let i = 0; i < 3; i++) expect(hitLimit("t", 3, 1000, 0)).toBe(false);
     expect(hitLimit("t", 3, 1000, 0)).toBe(true);
+  });
+});
+
+describe("shared sign-in limit", () => {
+  const now = 1_000_000;
+  it("locks an account after 5 failed attempts within 15 minutes", () => {
+    let s = null as ReturnType<typeof addFailure> | null;
+    for (let i = 0; i < 4; i++) s = addFailure(s, LOGIN_LIMITS.email.windowMs, now);
+    expect(limitStatus(s, LOGIN_LIMITS.email.max, now).blocked).toBe(false);
+    s = addFailure(s, LOGIN_LIMITS.email.windowMs, now);
+    expect(limitStatus(s, LOGIN_LIMITS.email.max, now).blocked).toBe(true);
+  });
+  it("unlocks once the 15 minute window passes", () => {
+    let s = null as ReturnType<typeof addFailure> | null;
+    for (let i = 0; i < 5; i++) s = addFailure(s, LOGIN_LIMITS.email.windowMs, now);
+    expect(limitStatus(s, 5, now + 15 * 60_000).blocked).toBe(false);
   });
 });
