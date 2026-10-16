@@ -1,0 +1,57 @@
+// Pure access rules, shared by server checks and tests.
+
+export type AccountMeta = {
+  role?: unknown;
+  courses?: unknown;
+  session_epoch?: unknown;
+};
+
+/** Course ids a student may open, or null when they may open every course. */
+export function allowedCourses(meta: AccountMeta | undefined): string[] | null {
+  const list = meta?.courses;
+  if (!Array.isArray(list)) return null;
+  return list.filter((c): c is string => typeof c === "string");
+}
+
+export function canOpenCourse(meta: AccountMeta | undefined, courseId: string): boolean {
+  if (meta?.role === "admin") return true;
+  const allowed = allowedCourses(meta);
+  return allowed === null || allowed.includes(courseId);
+}
+
+/** A token issued before the last "sign out everywhere" is no longer valid. */
+export function tokenStillValid(issuedAtSec: number | undefined, meta: AccountMeta | undefined): boolean {
+  const epoch = Number(meta?.session_epoch ?? 0);
+  if (!epoch) return true;
+  return typeof issuedAtSec === "number" && issuedAtSec >= epoch;
+}
+
+/** Whether an admin may change this account from the students list. */
+export function canManageAccount(target: AccountMeta | undefined, targetId: string, actorId: string): boolean {
+  if (targetId === actorId) return false;
+  return target?.role !== "admin";
+}
+
+export function readJwtIat(token: string): number | undefined {
+  try {
+    const part = token.split(".")[1] ?? "";
+    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/"));
+    const iat = (JSON.parse(json) as { iat?: unknown }).iat;
+    return typeof iat === "number" ? iat : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Simple fixed-window limiter. Per server instance; slows brute force and abuse. */
+const buckets = new Map<string, { count: number; reset: number }>();
+export function hitLimit(key: string, max: number, windowMs: number, now = Date.now()): boolean {
+  const b = buckets.get(key);
+  if (!b || b.reset <= now) {
+    buckets.set(key, { count: 1, reset: now + windowMs });
+    if (buckets.size > 5000) buckets.clear();
+    return false;
+  }
+  b.count += 1;
+  return b.count > max;
+}
