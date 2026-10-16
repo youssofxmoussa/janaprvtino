@@ -1,12 +1,15 @@
 import { AlertCircle, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Watermark } from "./Watermark";
 
 interface PdfViewerProps {
   src: string;
   className?: string;
   /** Called with (pagesRendered, totalPages) as pages come in. */
   onProgress?: (pagesRendered: number, totalPages: number) => void;
+  /** Viewer email stamped across the pages. */
+  viewer?: string;
 }
 
 /** Cache of already-painted pages, keyed by document url then page number. */
@@ -27,7 +30,7 @@ function cacheFor(src: string) {
  * renders the first pages immediately, pre-fetches pages ahead of the
  * viewport, and caches painted canvases so revisits are instant.
  */
-export function PdfViewer({ src, className, onProgress }: PdfViewerProps) {
+export function PdfViewer({ src, className, onProgress, viewer = "" }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(onProgress);
   progressRef.current = onProgress;
@@ -184,8 +187,23 @@ export function PdfViewer({ src, className, onProgress }: PdfViewerProps) {
   }, [attempt, src]);
 
   return (
-    <div className={className}>
+    <div
+      className={`relative select-none ${className ?? ""}`}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      onCopy={(e) => e.preventDefault()}
+    >
       <div ref={containerRef} className="flex w-full flex-col gap-3" />
+      {pageCount > 0 && (
+        <>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-10 bg-[url('/brand/jana-logo.png')] bg-[length:55%_auto] bg-[position:center_20vh] bg-repeat-y opacity-[0.07]"
+            style={{ backgroundSize: "55% auto", backgroundRepeat: "repeat-y", backgroundPosition: "center 15vh" }}
+          />
+          <Watermark text={viewer} tiled />
+        </>
+      )}
       {!error && pageCount === 0 && (
         <p className="px-4 py-6 text-center text-[0.8125rem] font-medium text-muted-foreground">
           Loading document…
