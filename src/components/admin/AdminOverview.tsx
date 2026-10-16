@@ -21,7 +21,8 @@ export function AdminDashboard() {
     ["Students", s?.students],
     ["Active this week", s?.activeWeek],
     ["Paused", s?.paused],
-    ["Lectures", s?.videos],
+    ["Sessions", s?.lessons],
+    ["Videos", s?.videos],
     ["PDFs", s?.pdfs],
     ["Questions", s?.questions],
   ];
@@ -30,9 +31,10 @@ export function AdminDashboard() {
       {err && <Notice msg={{ ok: false, text: err }} />}
       <div className="grid grid-cols-2 gap-3">
         {tiles.map(([label, n]) => (
-          <Card key={label}>
-            <p className="text-[0.75rem] font-medium text-muted-foreground">{label}</p>
-            <p className="mt-1 text-[1.75rem] font-bold tracking-tight">{n ?? "–"}</p>
+          <Card key={label} className="relative overflow-hidden">
+            <div aria-hidden className="absolute -top-6 -right-6 size-20 rounded-full bg-primary/10" />
+            <p className="relative text-[0.75rem] font-semibold text-muted-foreground uppercase">{label}</p>
+            <p className="relative mt-1 text-[2rem] font-extrabold tracking-tight text-primary">{n ?? "–"}</p>
           </Card>
         ))}
       </div>
