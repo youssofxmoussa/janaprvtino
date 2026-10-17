@@ -121,7 +121,7 @@ export const Route =
           title: `${SITE.name} — ${SITE.tagline}`,
           description: SITE.description,
           path: "/",
-        }),
+        }).filter((tag) => !tag.property?.startsWith("og:image") && !tag.name?.startsWith("twitter:image")),
       ],
 
       links: [

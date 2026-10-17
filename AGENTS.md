@@ -12,3 +12,4 @@
 - Admin actions are logged as individual JSON files under audit/ in the private data bucket via audit.server.ts; why: no database, and per-file writes avoid overwrite races.
 - Admin input sheets use the shared Radix Dialog primitives; why: consistent themed surfaces, focus trapping, Escape dismissal and focus restoration.
 - Subject artwork is mapped through a browser-safe module of bundled WebP imports; why: reuse cohesive generated illustrations across course and section cards.
+- PDF selection uses the shared PdfFileList component; why: independently verify long file names and selection behavior across screen sizes without exposing protected lessons.
