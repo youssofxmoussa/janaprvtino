@@ -7,6 +7,8 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  Check,
   RotateCw,
 } from "lucide-react";
 import { courses } from "@/lib/courses";
@@ -560,11 +562,13 @@ function SubjectContent() {
             >
               <div className="flex w-full flex-1 flex-col min-h-[60vh]">
                 {content && content.pdfs.length > 1 && (
-                  <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                  <div aria-label="Lesson PDF files" className="mb-4 grid w-full min-w-0 grid-cols-1 gap-2">
                     {content.pdfs.map((p, i) => (
-                      <button key={p.id} onClick={() => setPdfIdx(i)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold", i === pdfIdx ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>
-                        {p.title}
-                      </button>
+                      <Button key={p.id} variant="ghost" aria-pressed={i === pdfIdx} onClick={() => setPdfIdx(i)} className={cn("grid h-auto min-h-14 w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-3 py-3 text-left whitespace-normal", i === pdfIdx ? "border-primary/25 bg-primary/10 text-primary hover:bg-primary/15" : "border-border/60 bg-surface-solid text-foreground hover:bg-secondary/60")}>
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary"><FileText className="size-4" /></span>
+                        <span className="min-w-0 text-[0.8125rem] font-semibold leading-relaxed [overflow-wrap:anywhere]">{p.title}</span>
+                        <span className="grid size-5 shrink-0 place-items-center">{i === pdfIdx && <Check className="size-4" />}</span>
+                      </Button>
                     ))}
                   </div>
                 )}
