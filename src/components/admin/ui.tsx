@@ -1,7 +1,6 @@
-import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useState, type ReactNode } from "react";
-import { spring } from "@/components/ios/press";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return <section className={cn("clay rounded-[22px] p-4", className)}>{children}</section>;
@@ -19,28 +18,15 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
 /** iOS bottom sheet for forms. */
 export function Sheet({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div className="fixed inset-0 z-[90] flex items-end justify-center px-3 pb-3 safe-bottom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-foreground/25 backdrop-blur-[2px]" />
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            initial={{ y: 60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 60, opacity: 0 }}
-            transition={spring}
-            className="material relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-[22px] p-5 shadow-soft"
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[1.0625rem] font-bold">{title}</h3>
-              <button onClick={onClose} className="text-[0.9375rem] font-semibold text-primary">Done</button>
-            </div>
-            <div className="space-y-3">{children}</div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <Dialog open={open} onOpenChange={(value) => { if (!value) onClose(); }}>
+      <DialogContent aria-describedby={undefined} className="top-auto bottom-3 max-w-md translate-y-0 p-5 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2">
+        <div aria-hidden="true" className="mx-auto h-1 w-9 rounded-full bg-border sm:hidden" />
+        <DialogHeader className="pr-7 text-left">
+          <DialogTitle className="text-[1.125rem] leading-snug">{title}</DialogTitle>
+        </DialogHeader>
+        <div className="min-w-0 space-y-4">{children}</div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -76,7 +62,7 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
       <textarea
         {...rest}
         className={cn(
-          "min-h-24 w-full rounded-lg border border-border/60 bg-secondary/70 px-4 py-3 text-[1rem] outline-none focus:border-primary/60 focus:bg-surface-solid",
+          "min-h-28 w-full rounded-xl border border-border/60 bg-secondary/40 px-4 py-3 text-[1rem] text-foreground outline-none transition-colors focus:border-primary/40 focus:bg-surface-solid focus:ring-4 focus:ring-primary/10",
           className,
         )}
       />

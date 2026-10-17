@@ -54,7 +54,7 @@ function Courses() {
             <input
               type="text"
               placeholder="Search subjects or credits..."
-              className="flex-1 bg-transparent text-[0.9375rem] text-foreground outline-none placeholder:text-muted-foreground"
+              className="min-w-0 flex-1 bg-transparent text-[0.9375rem] text-foreground outline-none placeholder:text-muted-foreground"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -67,7 +67,7 @@ function Courses() {
         </div>
 
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] gap-2">
           {[
             { label: "All", value: null },
             { label: "Semester 1", value: 1 },
@@ -76,7 +76,7 @@ function Courses() {
             <button
               key={chip.label}
               onClick={() => setSemesterFilter(chip.value)}
-              className={`relative h-8 rounded-full px-4 text-[0.875rem] font-medium transition-all ${
+              className={`relative h-9 min-w-0 rounded-xl px-2 text-[0.8125rem] font-semibold transition-all ${
                 semesterFilter === chip.value
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "clay text-muted-foreground hover:text-foreground"
