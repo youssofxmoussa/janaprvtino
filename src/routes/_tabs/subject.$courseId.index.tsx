@@ -50,7 +50,7 @@ function SubjectParts() {
               whileTap={{ scale: 0.97 }}
               className="clay flex h-full flex-col items-center gap-3 rounded-[22px] p-4 text-center"
             >
-              <img src={p.image} alt="" width={88} height={88} className="size-20 object-contain" />
+              <img src={p.image} alt="" loading="lazy" width={112} height={112} className="size-28 max-w-full rounded-xl object-cover" />
               <div>
                 <h2 className="text-[1rem] font-bold leading-tight">{p.title}</h2>
                 <p className="mt-0.5 text-[0.75rem] font-medium text-muted-foreground">{p.subtitle}</p>

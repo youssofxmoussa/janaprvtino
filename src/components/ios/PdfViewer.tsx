@@ -111,7 +111,7 @@ export function PdfViewer({ src, className, onProgress, viewer = "" }: PdfViewer
             canvas.style.width = "100%";
             canvas.style.height = "auto";
             canvas.style.display = "block";
-            canvas.className = "bg-white select-none pointer-events-none";
+            canvas.className = "bg-paper select-none pointer-events-none";
             const ctx = canvas.getContext("2d");
             if (!ctx) return;
             ctx.scale(dpr, dpr);

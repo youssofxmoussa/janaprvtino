@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { courses } from "@/lib/courses";
 import { PdfViewer } from "@/components/ios/PdfViewer";
+import { PdfFileList } from "@/components/ios/PdfFileList";
 import { Watermark } from "@/components/ios/Watermark";
 import { useServerFn } from "@tanstack/react-start";
 import { getLessonContent } from "@/lib/content.functions";
@@ -559,15 +560,7 @@ function SubjectContent() {
               className="flex flex-col gap-4 flex-1"
             >
               <div className="flex w-full flex-1 flex-col min-h-[60vh]">
-                {content && content.pdfs.length > 1 && (
-                  <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-                    {content.pdfs.map((p, i) => (
-                      <button key={p.id} onClick={() => setPdfIdx(i)} className={cn("shrink-0 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold", i === pdfIdx ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>
-                        {p.title}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {content && <PdfFileList files={content.pdfs} selectedIndex={pdfIdx} onSelect={setPdfIdx} />}
                 {currentPdf ? (
                   <PdfViewer
                     key={currentPdf.id}

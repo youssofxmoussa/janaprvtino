@@ -56,13 +56,10 @@ function Admin() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={spring}
-        className="relative overflow-hidden rounded-[28px] bg-primary p-6 text-primary-foreground shadow-lift"
+        className="relative border-b border-border px-1 py-5 text-foreground"
       >
-        <div aria-hidden className="absolute -top-16 -right-10 size-48 rounded-full bg-primary-foreground/15 blur-2xl" />
-        <div aria-hidden className="absolute -bottom-20 -left-10 size-56 rounded-full bg-primary-foreground/10 blur-3xl" />
-        <p className="relative text-[0.8125rem] font-semibold opacity-80">Jana Prvt Course</p>
+        <p className="relative mb-2 text-[0.8125rem] font-semibold text-primary">Jana Prvt Course</p>
         <h1 className="relative text-[2.25rem] font-extrabold leading-none tracking-tight">Control center</h1>
-        <p className="relative mt-2 max-w-xs text-[0.875rem] opacity-85">Manage students, subjects, sessions, files and quizzes in one place.</p>
       </motion.section>
 
       <nav className="grid grid-cols-3 gap-2">
@@ -77,10 +74,10 @@ function Admin() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...spring, delay: i * 0.03 }}
               whileTap={{ scale: 0.95 }}
-              className={`relative flex flex-col items-start gap-2 rounded-[20px] p-3 text-left ${on ? "text-primary-foreground" : "clay text-foreground"}`}
+              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-[20px] border p-3 text-left ${on ? "border-primary/25 text-primary" : "border-border/40 bg-surface-solid text-foreground"}`}
             >
-              {on && <motion.div layoutId="adminTab" className="absolute inset-0 rounded-[20px] bg-primary shadow-lift" transition={spring} />}
-              <span className={`relative grid size-8 place-items-center rounded-xl ${on ? "bg-primary-foreground/20" : "bg-primary/10 text-primary"}`}>
+              {on && <motion.div layoutId="adminTab" className="absolute inset-0 rounded-[20px] bg-primary/10" transition={spring} />}
+              <span className="relative grid size-8 place-items-center rounded-xl bg-primary/10 text-primary">
                 <Icon className="size-4" />
               </span>
               <span className="relative">

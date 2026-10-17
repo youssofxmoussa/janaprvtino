@@ -5,12 +5,17 @@ import { useStudyTimer } from "@/lib/activity";
 import { useEffect } from "react";
 import { courses } from "@/lib/courses";
 import avatarJana from "@/assets/avatar-jana.webp";
+import { canOpenCourse } from "@/lib/access";
 
 export const Route = createFileRoute("/_tabs")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ params }) => {
     const user = await getSessionUser();
     if (!user) throw redirect({ to: "/login", replace: true });
+    const courseId = "courseId" in params ? params.courseId : undefined;
+    if (typeof courseId === "string" && !canOpenCourse(user.app_metadata, courseId.toLowerCase())) {
+      throw redirect({ to: "/courses", replace: true });
+    }
   },
   component: TabsLayout,
 });

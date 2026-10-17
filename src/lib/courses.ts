@@ -1,3 +1,5 @@
+import { partArtwork, subjectArtwork } from "./subject-artwork";
+
 export type CoursePart = { id: string; title: string; subtitle: string; image: string };
 
 export type Course = {
@@ -63,6 +65,16 @@ export const courses: Course[] = [
     ],
   },
 ];
+
+// Reuse the same illustrated family for course cards and their sections.
+for (const course of courses) {
+  const imageKey = course.image?.split("/").pop()?.replace(".webp", "");
+  if (imageKey && subjectArtwork[imageKey]) course.image = subjectArtwork[imageKey];
+  for (const part of course.parts) {
+    const key = part.image.split("/").pop()?.replace(".webp", "");
+    part.image = partArtwork[part.id] ?? (key ? subjectArtwork[key] : undefined) ?? part.image;
+  }
+}
 
 export const findCourse = (id: string) => courses.find((c) => c.id === id.toLowerCase());
 export const findPart = (courseId: string, partId: string) => findCourse(courseId)?.parts.find((p) => p.id === partId);

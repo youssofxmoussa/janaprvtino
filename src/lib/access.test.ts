@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { addFailure, limitStatus, LOGIN_LIMITS, canManageAccount, canOpenCourse, hitLimit, tokenStillValid } from "./access";
 
 describe("access rules", () => {
+  it("signed-out users and accounts without membership cannot open courses", () => {
+    expect(canOpenCourse(undefined, "b1100")).toBe(false);
+    expect(canOpenCourse({ role: "user" }, "b1100")).toBe(false);
+  });
+  it("malformed course permissions never grant unrestricted access", () => {
+    expect(canOpenCourse({ role: "student", courses: "b1100" }, "c1100")).toBe(false);
+    expect(canOpenCourse({ role: "student", courses: [] }, "b1100")).toBe(false);
+  });
   it("admin accounts cannot be paused, edited or deleted from the list", () => {
     expect(canManageAccount({ role: "admin" }, "a", "me")).toBe(false);
   });

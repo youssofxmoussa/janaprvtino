@@ -10,12 +10,14 @@ export type AccountMeta = {
 /** Course ids a student may open, or null when they may open every course. */
 export function allowedCourses(meta: AccountMeta | undefined): string[] | null {
   const list = meta?.courses;
-  if (!Array.isArray(list)) return null;
+  if (list === undefined) return null;
+  if (!Array.isArray(list)) return [];
   return list.filter((c): c is string => typeof c === "string");
 }
 
 export function canOpenCourse(meta: AccountMeta | undefined, courseId: string): boolean {
   if (meta?.role === "admin") return true;
+  if (meta?.role !== "student") return false;
   const allowed = allowedCourses(meta);
   return allowed === null || allowed.includes(courseId);
 }

@@ -12,8 +12,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 export async function getSessionUser() {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user ?? null;
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
+  const user = data.user;
+  const role = user?.app_metadata?.["role"];
+  return role === "student" || role === "admin" ? user : null;
 }
 
 export function isAdmin(user: { app_metadata?: Record<string, unknown> } | null) {
