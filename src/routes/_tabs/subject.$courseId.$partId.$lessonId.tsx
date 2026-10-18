@@ -14,7 +14,8 @@ import { PdfViewer } from "@/components/ios/PdfViewer";
 import { PdfFileList } from "@/components/ios/PdfFileList";
 import { Watermark } from "@/components/ios/Watermark";
 import { useServerFn } from "@tanstack/react-start";
-import { getLessonContent } from "@/lib/content.functions";
+import { getLessonContent, submitLessonAnswer } from "@/lib/content.functions";
+import type { StudentQuestion } from "@/lib/quiz";
 import { Button } from "@/components/ui/button";
 import { spring } from "@/components/ios/press";
 import { recordMinutes, recordSubject, useFocusTimer } from "@/lib/activity";
@@ -63,13 +64,7 @@ export const Route = createFileRoute("/_tabs/subject/$courseId/$partId/$lessonId
 
 type Tab = "Videos" | "PDFs" | "Q&A";
 
-interface Question {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-}
+type Question = StudentQuestion;
 
 /* =========================================================
    QUESTIONS
@@ -97,6 +92,11 @@ function SubjectContent() {
   );
 
   const fetchContent = useServerFn(getLessonContent);
+  const submitAnswer = useServerFn(submitLessonAnswer);
+  const [grading, setGrading] = useState(false);
+  const gradingRef = useRef(false);
+  const [answerError, setAnswerError] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<number, Awaited<ReturnType<typeof submitLessonAnswer>>>>({});
   type Content = Awaited<ReturnType<typeof getLessonContent>>;
   const [content, setContent] = useState<Content | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -288,33 +288,27 @@ function SubjectContent() {
      QUIZ
      ========================================================= */
 
-  const handleSelectOption = (
+  const handleSelectOption = async (
     qId: number,
     optionIdx: number,
   ) => {
-    setAnswers((prev) => {
-      const next = {
-        ...prev,
-        [qId]: optionIdx,
-      };
-
-      const correct = QUESTIONS.filter(
-        (q) => next[q.id] === q.correctAnswer,
-      ).length;
-
-      recordSubject(courseId, {
-        quizAnswered: Object.keys(next).length,
-        quizCorrect: correct,
-        quizTotal: QUESTIONS.length,
-      });
-
-      return next;
-    });
-
-    setShowExplanations((prev) => ({
-      ...prev,
-      [qId]: true,
-    }));
+    if (gradingRef.current || answers[qId] !== undefined) return;
+    gradingRef.current = true;
+    setGrading(true);
+    setAnswerError(null);
+    try {
+      const result = await submitAnswer({ data: { courseId: courseId.toLowerCase(), partId, lessonId, questionId: qId, option: optionIdx } });
+      const nextResults = { ...results, [qId]: result };
+      setResults(nextResults);
+      setAnswers((prev) => ({ ...prev, [qId]: optionIdx }));
+      recordSubject(courseId, { quizAnswered: Object.keys(nextResults).length, quizCorrect: Object.values(nextResults).filter((r) => r.correct).length, quizTotal: QUESTIONS.length });
+      setShowExplanations((prev) => ({ ...prev, [qId]: true }));
+    } catch {
+      setAnswerError("Couldn't check your answer. Please try again.");
+    } finally {
+      gradingRef.current = false;
+      setGrading(false);
+    }
   };
 
   const nextQuestion = () => {
@@ -628,6 +622,7 @@ function SubjectContent() {
               </header>
 
               <div className="flex flex-col gap-6">
+                {answerError && <p role="alert" className="text-sm text-destructive">{answerError}</p>}
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentQuestion.id}
@@ -660,16 +655,17 @@ function SubjectContent() {
 
                           const isCorrect =
                             idx ===
-                            currentQuestion.correctAnswer;
+                            results[currentQuestion.id]?.correctAnswer;
 
                           const hasAnswered =
                             answers[currentQuestion.id] !==
                             undefined;
 
                           return (
-                            <button
+                            <Button
                               key={idx}
-                              disabled={hasAnswered}
+                              variant="ghost"
+                              disabled={hasAnswered || grading}
                               onClick={() =>
                                 handleSelectOption(
                                   currentQuestion.id,
@@ -677,7 +673,7 @@ function SubjectContent() {
                                 )
                               }
                               className={cn(
-                                "relative flex items-center justify-between gap-2.5 rounded-2xl border-2 px-3.5 py-3 text-left text-[0.875rem] font-semibold leading-snug transition-all sm:px-4 sm:py-3.5 sm:text-[0.9375rem]",
+                                "relative h-auto whitespace-normal flex items-center justify-between gap-2.5 rounded-2xl border-2 px-3.5 py-3 text-left text-[0.875rem] font-semibold leading-snug transition-all sm:px-4 sm:py-3.5 sm:text-[0.9375rem]",
 
                                 !hasAnswered &&
                                   "border-transparent bg-secondary/50 active:scale-[0.98] active:bg-secondary/80",
@@ -702,7 +698,7 @@ function SubjectContent() {
                               </span>
 
                               {hasAnswered && isCorrect && (
-                                <div className="flex size-5 items-center justify-center rounded-full bg-mint text-white">
+                                <div className="flex size-5 items-center justify-center rounded-full bg-mint text-primary-foreground">
                                   <svg
                                     className="size-3 fill-current"
                                     viewBox="0 0 20 20"
@@ -711,7 +707,7 @@ function SubjectContent() {
                                   </svg>
                                 </div>
                               )}
-                            </button>
+                            </Button>
                           );
                         },
                       )}
@@ -738,7 +734,7 @@ function SubjectContent() {
                             </div>
 
                             <p className="text-[0.8125rem] font-medium italic leading-relaxed text-muted-foreground sm:text-[0.875rem]">
-                              {currentQuestion.explanation}
+                              {results[currentQuestion.id]?.explanation}
                             </p>
                           </div>
                         </motion.div>

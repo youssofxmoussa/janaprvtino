@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireAdmin, requireMember } from "./auth.middleware";
 import { canOpenCourse } from "./access";
 import { courses } from "./courses";
+import { gradeQuestion, studentQuestions } from "./quiz";
 import {
   allMedia,
   emptyContent,
@@ -90,7 +91,24 @@ export const getLessonContent = createServerFn({ method: "POST" })
     const lesson = content.parts[data.partId]?.find((l) => l.id === data.lessonId && !l.hidden);
     if (!lesson) throw new Error("This lesson isn't available.");
     const signed = await signLesson(lesson);
-    return { title: lesson.title, questions: lesson.questions, ...signed, viewer: context.email };
+    return { title: lesson.title, questions: studentQuestions(lesson.questions), ...signed, viewer: context.email };
+  });
+
+/** Answers are disclosed only after an authenticated, authorized submission. */
+export const submitLessonAnswer = createServerFn({ method: "POST" })
+  .middleware([requireMember])
+  .inputValidator((input: { courseId: string; partId: string; lessonId: string; questionId: number; option: number }) => {
+    const { courseId } = courseInput(input);
+    if (!isValidPartId(courseId, input.partId) || !/^[A-Za-z0-9-]{1,64}$/.test(input.lessonId)) throw new Error("Unknown lesson");
+    if (!Number.isInteger(input.questionId) || !Number.isInteger(input.option)) throw new Error("Invalid answer.");
+    return { courseId, partId: input.partId, lessonId: input.lessonId, questionId: input.questionId, option: input.option };
+  })
+  .handler(async ({ data, context }) => {
+    assertOpen(context.meta, data.courseId);
+    const content = await readContent(data.courseId);
+    const lesson = content.parts[data.partId]?.find((l) => l.id === data.lessonId && !l.hidden);
+    if (!lesson) throw new Error("This lesson isn't available.");
+    return gradeQuestion(lesson.questions, data.questionId, data.option);
   });
 
 export const getCourseContentAdmin = createServerFn({ method: "POST" })

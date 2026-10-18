@@ -10,7 +10,7 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
-    console.error(error);
+    console.error("Request failed."); // Never log credentials or signed URLs from provider errors.
     return new Response(renderErrorPage(), {
       status: 500,
       headers: { "content-type": "text/html; charset=utf-8" },
@@ -35,12 +35,21 @@ const CSP = [
 
 /** Hardening headers on every response. */
 const securityHeaders = createMiddleware().server(async ({ next }) => {
+  const { setResponseHeader } = await import("@tanstack/react-start/server");
+  setResponseHeader("Content-Security-Policy", CSP);
+  setResponseHeader("X-Content-Type-Options", "nosniff");
+  setResponseHeader("Referrer-Policy", "no-referrer");
+  setResponseHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+  setResponseHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
+  setResponseHeader("Cross-Origin-Opener-Policy", "same-origin");
+  setResponseHeader("Cache-Control", "private, no-store");
   const result = await next();
   const h = (result as { response?: Response }).response?.headers;
   if (h) {
     h.set("Content-Security-Policy", CSP);
     h.set("X-Content-Type-Options", "nosniff");
-    h.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    h.set("Referrer-Policy", "no-referrer");
+    h.set("Cache-Control", "private, no-store");
     h.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
     h.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
     h.set("Cross-Origin-Opener-Policy", "same-origin");
