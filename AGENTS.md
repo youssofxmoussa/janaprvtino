@@ -13,3 +13,6 @@
 - Admin input sheets use the shared Radix Dialog primitives; why: consistent themed surfaces, focus trapping, Escape dismissal and focus restoration.
 - Subject artwork is mapped through a browser-safe module of bundled WebP imports; why: reuse cohesive generated illustrations across course and section cards.
 - PDF selection uses the shared PdfFileList component; why: independently verify long file names and selection behavior across screen sizes without exposing protected lessons.
+- Student quiz payloads omit answer keys; grading runs in an authorized server function using pure quiz helpers, so inspecting initial requests cannot reveal solutions.
+- All-course access requires an explicit null course grant; missing or malformed grants deny access, so incomplete account metadata never expands permissions.
+- Request security headers use TanStack response utilities as well as raw response headers; why: both normal SSR/RPC and fallback responses must receive them.

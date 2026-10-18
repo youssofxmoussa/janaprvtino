@@ -93,7 +93,7 @@ export const createStudent = createServerFn({ method: "POST" })
       password: data.password,
       email_confirm: true,
       user_metadata: data.name ? { name: data.name } : {},
-      app_metadata: { role: "student" },
+      app_metadata: { role: "student", courses: [] },
     });
     if (error) throw new Error(error.message.includes("already") ? "This email already has an account." : "Couldn't create the student.");
     await audit(context.email, "Added student", data.email);
@@ -126,7 +126,7 @@ export const bulkCreateStudents = createServerFn({ method: "POST" })
         email: r.email,
         password: r.password,
         email_confirm: true,
-        app_metadata: { role: "student" },
+        app_metadata: { role: "student", courses: [] },
       });
       if (error) failed.push(r.email);
       else created++;
@@ -142,6 +142,7 @@ export const setStudentPaused = createServerFn({ method: "POST" })
     const u = await assertStudent(data.id, context.userId);
     const { error } = await (await admin()).auth.admin.updateUserById(data.id, {
       ban_duration: data.paused ? FOREVER : "none",
+      ...(data.paused ? { app_metadata: { ...u.app_metadata, session_epoch: Math.floor(Date.now() / 1000) + 1 } } : {}),
     });
     if (error) throw new Error("Couldn't update the student.");
     await audit(context.email, data.paused ? "Paused student" : "Resumed student", u.email);
@@ -155,7 +156,7 @@ export const setStudentPassword = createServerFn({ method: "POST" })
     const u = await assertStudent(data.id, context.userId);
     const { error } = await (await admin()).auth.admin.updateUserById(data.id, {
       password: data.password,
-      app_metadata: { ...u.app_metadata, session_epoch: Math.floor(Date.now() / 1000) },
+      app_metadata: { ...u.app_metadata, session_epoch: Math.floor(Date.now() / 1000) + 1 },
     });
     if (error) throw new Error("Couldn't change the password.");
     await audit(context.email, "Reset password", u.email);
@@ -173,8 +174,7 @@ export const setStudentCourses = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const u = await assertStudent(data.id, context.userId);
     const meta = { ...u.app_metadata } as Record<string, unknown>;
-    if (data.courses === null) delete meta["courses"];
-    else meta["courses"] = data.courses;
+    meta["courses"] = data.courses;
     const { error } = await (await admin()).auth.admin.updateUserById(data.id, { app_metadata: meta });
     if (error) throw new Error("Couldn't save course access.");
     await audit(context.email, data.courses === null ? "Gave access to all courses" : `Set ${data.courses.length} courses`, u.email);
@@ -187,7 +187,7 @@ export const signOutStudent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const u = await assertStudent(data.id, context.userId);
     const { error } = await (await admin()).auth.admin.updateUserById(data.id, {
-      app_metadata: { ...u.app_metadata, session_epoch: Math.floor(Date.now() / 1000) },
+      app_metadata: { ...u.app_metadata, session_epoch: Math.floor(Date.now() / 1000) + 1 },
     });
     if (error) throw new Error("Couldn't sign the student out.");
     await audit(context.email, "Signed out of all devices", u.email);

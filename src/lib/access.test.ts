@@ -23,8 +23,14 @@ describe("access rules", () => {
     expect(canOpenCourse({ role: "student", courses: ["b1100"] }, "c1100")).toBe(false);
     expect(canOpenCourse({ role: "student", courses: ["b1100"] }, "b1100")).toBe(true);
   });
-  it("students without a course list open every course", () => {
-    expect(canOpenCourse({ role: "student" }, "c1100")).toBe(true);
+  it("students without a course list have no access by default", () => {
+    expect(canOpenCourse({ role: "student" }, "c1100")).toBe(false);
+  });
+  it("only explicit all-course grants open all courses", () => {
+    expect(canOpenCourse({ role: "student", courses: null }, "c1100")).toBe(true);
+  });
+  it("admin course access remains unrestricted", () => {
+    expect(canOpenCourse({ role: "admin" }, "c1100")).toBe(true);
   });
   it("sign out everywhere rejects older sessions", () => {
     expect(tokenStillValid(100, { session_epoch: 200 })).toBe(false);
