@@ -1,16 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { LOGIN_LIMITS } from "./access";
+import { validateLogin } from "./login-input";
 
 const wait = (ms: number) => `Too many attempts. Try again in ${Math.max(1, Math.ceil(ms / 60_000))} min.`;
 
 /** Sign-in goes through the server so attempts are counted for everyone, everywhere. */
 export const signInWithLimit = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; password: string }) => {
-    const email = String(input?.email ?? "").trim().toLowerCase().slice(0, 254);
-    const password = String(input?.password ?? "").slice(0, 72);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !password) throw new Error("Incorrect email or password.");
-    return { email, password };
-  })
+  .inputValidator(validateLogin)
   .handler(async ({ data }) => {
     const { getRequestHeader } = await import("@tanstack/react-start/server");
     const { checkLimit, recordFailure, clearLimit } = await import("./rate-limit.server");
