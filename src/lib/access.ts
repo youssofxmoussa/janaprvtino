@@ -10,7 +10,7 @@ export type AccountMeta = {
 /** Course ids a student may open, or null when they may open every course. */
 export function allowedCourses(meta: AccountMeta | undefined): string[] | null {
   const list = meta?.courses;
-  if (list === undefined) return null;
+  if (list === null) return null; // Only an explicit admin grant opens every course.
   if (!Array.isArray(list)) return [];
   return list.filter((c): c is string => typeof c === "string");
 }
@@ -26,7 +26,7 @@ export function canOpenCourse(meta: AccountMeta | undefined, courseId: string): 
 export function tokenStillValid(issuedAtSec: number | undefined, meta: AccountMeta | undefined): boolean {
   const epoch = Number(meta?.session_epoch ?? 0);
   if (!epoch) return true;
-  return typeof issuedAtSec === "number" && issuedAtSec >= epoch;
+  return Number.isFinite(epoch) && typeof issuedAtSec === "number" && issuedAtSec >= epoch;
 }
 
 /** Whether an admin may change this account from the students list. */
